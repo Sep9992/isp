@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'notifications.dart';
+import 'settings_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
   runApp(const IspApp());
 }
 
@@ -109,7 +113,7 @@ const List<NavTab> _tabs = [
     label: 'Nastavení',
     icon: Icons.settings_outlined,
     selectedIcon: Icons.settings,
-    url: 'https://isp.mlsoft.cz/web/profile.htm',
+    url: 'about:blank',
   ),
 ];
 
@@ -206,6 +210,18 @@ class _IspWebScreenState extends State<IspWebScreen> {
   }
 
   void _navigateToTab(int index) {
+    // Záložka Nastavení (index 4) → otevřeme Flutter obrazovku
+    if (index == 4) {
+      if (!mounted) return;
+      setState(() => _selectedIndex = 4);
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (ctx) => const SettingsScreen()),
+      ).then((_) {
+        // Po návratu z nastavení resetujeme index zpět na předchozí záložku
+        if (mounted) setState(() => _selectedIndex = 0);
+      });
+      return;
+    }
     if (_selectedIndex == index && !isLoading && !hasError) return;
     final url = _tabs[index].url;
     setState(() {
@@ -388,6 +404,181 @@ class _IspWebScreenState extends State<IspWebScreen> {
         .ui-dialog-content td { padding: 10px !important; border-bottom: 1px solid #eee !important; }
         .ui-dialog-content td:first-child { padding-left: 15px !important; width: 40px !important; }
         .ui-dialog-buttonpane { background: #f5f5f5 !important; padding: 15px !important; margin: 0 !important; border-top: 1px solid #ddd !important; }
+
+        #menuItemDetailModal .modal-footer {
+            border-radius: 0 0 20px 20px !important;
+            overflow: hidden !important;
+        }
+
+        #menuItemDetailModal .modal-content {
+            border-radius: 20px !important;
+            overflow: hidden !important;
+            border: none !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3) !important;
+        }
+
+        #orderDetailModal .modal-dialog {
+            width: 94% !important;
+            max-width: 420px !important;
+            margin: 5vh auto !important;
+        }
+
+        #orderDetailModal .modal-content {
+            border-radius: 20px !important;
+            border: none !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35) !important;
+            overflow: hidden !important;
+        }
+
+        #orderDetailModal .modal-body {
+            padding: 0 !important;
+        }
+
+        #orderDetailModal .modal-footer {
+            padding: 10px 16px !important;
+            border-top: 1px solid #e8edf8 !important;
+        }
+
+        #orderDetailModal .modal-footer .btn {
+            background: #1565C0 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 10px 28px !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+
+        /* Název jídla */
+        #orderDetailModal .mealName {
+            background: linear-gradient(135deg, #1565C0 0%, #1976D2 100%) !important;
+            color: white !important;
+            margin: 0 !important;
+            padding: 16px !important;
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            line-height: 1.4 !important;
+        }
+
+        /* Detail sekce */
+        #orderDetailModal .halves {
+            padding: 16px !important;
+            background: #f8f9ff !important;
+        }
+
+        #orderDetailModal .leftHalf h5 {
+            margin: 6px 0 !important;
+            font-size: 13px !important;
+            color: #333 !important;
+            font-weight: 400 !important;
+        }
+
+        /* Popisky (Datum:, Stav: atd.) */
+        #orderDetailModal .orderDetailHeader {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            color: #1565C0 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        /* Stav Vydáno – zelený odznak */
+        #orderDetailModal h5:last-child {
+            margin-top: 8px !important;
+        }
+
+        /* Záložky Alergeny / Složení */
+        #orderDetailModal .nav-tabs {
+            border-bottom: 2px solid #e8edf8 !important;
+            padding: 0 16px !important;
+            background: white !important;
+            margin: 0 !important;
+        }
+
+        #orderDetailModal .nav-tabs li a {
+            color: #90a4ae !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            border: none !important;
+            padding: 10px 16px !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+        }
+
+        #orderDetailModal .nav-tabs li.active a {
+            color: #1565C0 !important;
+            border-bottom: 2px solid #1565C0 !important;
+            margin-bottom: -2px !important;
+            background: transparent !important;
+        }
+
+        /* Obsah záložek */
+        #orderDetailModal .tab-content {
+            padding: 12px 16px !important;
+            min-height: 60px !important;
+            background: white !important;
+        }
+
+        /* Hlavní tabulka */
+        .cateringoperations table,
+        #main > table, #content > table, .content > table,
+        #main table.table, .table {
+            width: 100% !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            border-radius: 16px !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 12px rgba(21,101,192,0.08) !important;
+            border: 1px solid #e8edf8 !important;
+            margin: 0 0 16px 0 !important;
+        }
+
+        /* Řádky */
+        .table tr { border-bottom: 1px solid #f0f4ff !important; }
+        .table tr:last-child { border-bottom: none !important; }
+        .table tr:nth-child(even) td { background: #f8f9ff !important; }
+
+        /* Buňky */
+        .table td {
+            padding: 10px 8px !important;
+            font-size: 13px !important;
+            vertical-align: middle !important;
+            border: none !important;
+            border-bottom: 1px solid #f0f4ff !important;
+            color: #333 !important;
+        }
+
+        /* Datum – tučně */
+        .table td:nth-child(2) {
+            font-weight: 600 !important;
+            color: #1a237e !important;
+            white-space: nowrap !important;
+        }
+
+        /* Typ transakce */
+        .table td.x12 {
+            color: #546e7a !important;
+            font-size: 12px !important;
+        }
+
+        /* Částka – vpravo, červeně */
+        .table td.r {
+            text-align: right !important;
+            font-weight: 700 !important;
+            white-space: nowrap !important;
+            color: #C62828 !important;
+        }
+
+        /* Ikonka lupy */
+        .table td:first-child { width: 32px !important; text-align: center !important; }
+        .table td:first-child img { width: 16px !important; height: 16px !important; opacity: 0.5 !important; }
+
+        /* Tlačítko Tisk – skryjeme na mobilu */
+        input[value="Tisk"],
+        input[onclick*="print"],
+        button[onclick*="print"] {
+            display: none !important;
+        }
 
         /* ═══════════════════════════════════════════
            JÍDELNÍČEK – KARTA STYL
@@ -766,8 +957,97 @@ class _IspWebScreenState extends State<IspWebScreen> {
         }
 
         /* ═══════════════════════════════════════════
-           OBJEDNÁVKOVÝ MODAL – prepareCompoundOrderModal
+           OBJEDNÁVKY – cateringorders.htm
            ═══════════════════════════════════════════ */
+
+        /* Skryjeme obrázky příborů a stavu */
+        #orderRow .menuGridRowMeal img,
+        .menuGridRowMeal img[src*="state_"],
+        .menuGridRowMeal img[src*="catering"] {
+            display: none !important;
+        }
+
+        /* Datum + info v menuGridRowCourse – menší a přehlednější */
+        #orderRow .menuGridRowCourse {
+            font-size: 11px !important;
+            color: #90a4ae !important;
+            line-height: 1.5 !important;
+        }
+
+        /* Cena v objednávkách – sjednotíme s Jídelníčkem */
+        #orderRow .menuGridRowPrice span {
+            font-size: 12px !important;
+            color: #1565C0 !important;
+            font-weight: 700 !important;
+        }
+
+        /* Wrapper #orderRow */
+        #orderRow {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 10px !important;
+            padding: 0 10px 16px 10px !important;
+        }
+
+        @keyframes ispCardIn {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .menuGridRow, .menuGridRowOrdered {
+            animation: ispCardIn 0.35s ease both;
+        }
+
+        /* ═══════════════════════════════════════════
+           PRÁZDNÝ DEN
+           ═══════════════════════════════════════════ */
+
+        .isp-empty-day {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 48px 24px !important;
+            text-align: center !important;
+        }
+
+        .isp-empty-day-icon {
+            font-size: 56px !important;
+            margin-bottom: 16px !important;
+            opacity: 0.7 !important;
+        }
+
+        .isp-empty-day-title {
+            font-size: 18px !important;
+            font-weight: 700 !important;
+            color: #1a237e !important;
+            margin-bottom: 8px !important;
+        }
+
+        .isp-empty-day-sub {
+            font-size: 14px !important;
+            color: #90a4ae !important;
+            line-height: 1.5 !important;
+            margin-bottom: 24px !important;
+        }
+
+        .isp-empty-day-btn {
+            background: #1565C0 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 12px 28px !important;
+            font-size: 15px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            text-decoration: none !important;
+        }
 
         #prepareCompoundOrderModal .modal-dialog,
         #preOrderCountModal .modal-dialog {
@@ -1147,6 +1427,337 @@ class _IspWebScreenState extends State<IspWebScreen> {
       }
 
       setTimeout(updateLimitDisplay, 100);
+
+      // ── Animace karet – stagger efekt ────────────────────────────────
+      function animateCards() {
+          var cards = document.querySelectorAll('.menuGridRow, .menuGridRowOrdered');
+          cards.forEach(function(card, i) {
+              card.style.animationDelay = (i * 60) + 'ms';
+          });
+      }
+
+      // ── Prázdný den ───────────────────────────────────────────────────
+      function checkEmptyDay() {
+          var menuGrid = document.querySelector('.menuGrid');
+          if (!menuGrid) return;
+
+          var cards = menuGrid.querySelectorAll('.menuGridRow, .menuGridRowOrdered');
+          if (cards.length > 0) return; // Jsou jídla, nic nedělat
+
+          if (menuGrid.querySelector('.isp-empty-day')) return; // Již přidáno
+
+          // Zjistíme den v týdnu z datumové lišty
+          var headerText = '';
+          var contentHeader = document.querySelector('.contentHeader span');
+          if (contentHeader) headerText = contentHeader.innerText.trim();
+
+          var isWeekend = headerText.toLowerCase().includes('sobota') ||
+                          headerText.toLowerCase().includes('neděle') ||
+                          headerText.toLowerCase().includes('so ') ||
+                          headerText.toLowerCase().includes('ne ');
+
+          var icon  = isWeekend ? '🌴' : '🍽️';
+          var title = isWeekend ? 'Víkend – zavřeno' : 'Dnes se nevaří';
+          var sub   = isWeekend
+              ? 'O víkendu jídelna neprovozuje výdej obědů.'
+              : 'Pro tento den není jídelníček k dispozici.\nZkuste jiný den.';
+
+          // Najdeme prev/next href ze stránky
+          var prevLink = document.querySelector('a[href*="part=prev"]');
+          var nextLink = document.querySelector('a[href*="part=next"]');
+          var nextHref = nextLink ? nextLink.getAttribute('href') : 'cateringmenu.htm?part=next';
+
+          var emptyDiv = document.createElement('div');
+          emptyDiv.className = 'isp-empty-day';
+          emptyDiv.innerHTML =
+              '<div class="isp-empty-day-icon">' + icon + '</div>' +
+              '<div class="isp-empty-day-title">' + title + '</div>' +
+              '<div class="isp-empty-day-sub">' + sub.replace('\n', '<br>') + '</div>' +
+              '<a href="' + nextHref + '" class="isp-empty-day-btn">Přejít na další den →</a>';
+
+          menuGrid.appendChild(emptyDiv);
+      }
+
+      setTimeout(animateCards, 200);
+      setTimeout(checkEmptyDay, 600);
+
+      // ── Objednávky – nahradit ikonky stavu barevnými odznaky ─────────
+      function styleOrdersPage() {
+          if (!window.location.href.includes('cateringorders')) return;
+
+          document.querySelectorAll('.menuGridRowMeal img[src*="state_"]').forEach(function(img) {
+              var src = img.getAttribute('src') || '';
+              var alt = img.getAttribute('alt') || '';
+
+              var label = '';
+              var bg    = '#e3f2fd';
+              var color = '#1565C0';
+
+              if (src.includes('COLLECTED') || alt === 'COLLECTED') {
+                  label = '✓ Vydáno'; bg = '#E8F5E9'; color = '#2E7D32';
+              } else if (src.includes('ORDERED') || alt === 'ORDERED') {
+                  label = '⏳ Objednáno'; bg = '#E3F2FD'; color = '#1565C0';
+              } else if (src.includes('CANCELLED') || alt === 'CANCELLED') {
+                  label = '✗ Zrušeno'; bg = '#FFEBEE'; color = '#C62828';
+              } else if (src.includes('READY') || alt === 'READY') {
+                  label = '🍽️ Připraveno'; bg = '#FFF8E1'; color = '#F57F17';
+              } else {
+                  label = alt || 'Stav';
+              }
+
+              var badge = document.createElement('span');
+              badge.style.cssText =
+                  'display:inline-block;background:' + bg + ';color:' + color + ';' +
+                  'font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;' +
+                  'white-space:nowrap;margin-right:6px;vertical-align:middle;';
+              badge.innerText = label;
+              img.parentNode.insertBefore(badge, img);
+              img.style.display = 'none';
+          });
+      }
+
+      setTimeout(styleOrdersPage, 600);
+
+      // ── Historie – kladné částky zeleně ──────────────────────────────
+      function styleHistoryPage() {
+          if (!window.location.href.includes('cateringoperations')) return;
+
+          // Najdeme tabulku s historií (má td s datumem ve formátu d.m.yyyy)
+          var tables = document.querySelectorAll('table');
+          var historyTable = null;
+          tables.forEach(function(t) {
+              if (t.querySelector('td[style*="6em"]')) historyTable = t;
+          });
+          if (!historyTable || historyTable.getAttribute('data-styled')) return;
+          historyTable.setAttribute('data-styled', '1');
+
+          // Nastylujeme tabulku
+          historyTable.style.cssText =
+              'width:100%!important;border-collapse:separate!important;border-spacing:0!important;' +
+              'border-radius:16px!important;overflow:hidden!important;' +
+              'box-shadow:0 2px 12px rgba(21,101,192,0.08)!important;' +
+              'border:1px solid #e8edf8!important;margin:0 0 16px 0!important;';
+
+          var rows = historyTable.querySelectorAll('tr');
+          rows.forEach(function(row, i) {
+              var tds = row.querySelectorAll('td');
+              if (!tds.length) return;
+
+              // Alternující pozadí
+              row.style.background = (i % 2 === 0) ? '#ffffff' : '#f8f9ff';
+
+              tds.forEach(function(td, j) {
+                  td.style.cssText =
+                      'padding:10px 8px!important;font-size:13px!important;' +
+                      'vertical-align:middle!important;border:none!important;' +
+                      'border-bottom:1px solid #f0f4ff!important;';
+
+                  // Datum (2. sloupec)
+                  if (j === 1) {
+                      td.style.fontWeight = '700';
+                      td.style.color = '#1a237e';
+                      td.style.whiteSpace = 'nowrap';
+                  }
+
+                  // Typ transakce (3. sloupec)
+                  if (j === 2) {
+                      td.style.color = '#546e7a';
+                      td.style.fontSize = '12px';
+                  }
+
+                  // Částka (4. sloupec)
+                  if (j === 3) {
+                      td.style.textAlign = 'right';
+                      td.style.fontWeight = '700';
+                      td.style.whiteSpace = 'nowrap';
+                      var text = td.innerText.trim();
+                      td.style.color = text.startsWith('-') ? '#C62828' : '#2E7D32';
+                  }
+
+                  // Ikonka lupy (1. sloupec)
+                  if (j === 0) {
+                      td.style.width = '32px';
+                      td.style.textAlign = 'center';
+                      var img = td.querySelector('img');
+                      if (img) { img.style.width = '16px'; img.style.opacity = '0.4'; }
+                  }
+              });
+
+              // Poslední řádek – žádný border
+              if (i === rows.length - 1) {
+                  tds.forEach(function(td) { td.style.borderBottom = 'none'; });
+              }
+          });
+      }
+      setTimeout(styleHistoryPage, 600);
+
+      // ── Detail objednávky – stav jako barevný odznak ─────────────────
+      function styleOrderDetail() {
+          var modal = document.getElementById('menuItemDetailModal');
+          if (!modal) return;
+
+          // Název jídla
+          var mealName = modal.querySelector('.mealName');
+          if (mealName) {
+              mealName.style.cssText =
+                  'background:linear-gradient(135deg,#1565C0,#1976D2);' +
+                  'color:white;margin:0;padding:18px 16px;font-size:16px;' +
+                  'font-weight:700;line-height:1.4;display:block;' +
+                  'border-radius:20px 20px 0 0;';
+          }
+
+          // halves → info karty
+          var halves = modal.querySelector('.halves');
+          if (halves) {
+              halves.style.cssText = 'padding:12px 16px;background:#f8f9ff;display:block;';
+              halves.querySelectorAll('h5').forEach(function(h5) {
+                  h5.style.cssText =
+                      'margin:0 0 8px 0;padding:10px 12px;background:white;' +
+                      'border-radius:10px;font-size:13px;font-weight:400;' +
+                      'color:#333;display:flex;align-items:center;gap:8px;' +
+                      'box-shadow:0 1px 4px rgba(21,101,192,0.07);';
+
+                  var header = h5.querySelector('.orderDetailHeader');
+                  if (header) {
+                      header.style.cssText =
+                          'font-size:10px;font-weight:700;color:#1565C0;' +
+                          'text-transform:uppercase;letter-spacing:0.5px;' +
+                          'min-width:70px;flex-shrink:0;';
+                  }
+
+                  // Stav → odznak
+                  if (header && header.innerText.includes('Stav')) {
+                      var stateText = h5.innerText.replace(header.innerText, '').trim();
+                      var bg = '#E8F5E9'; var col = '#2E7D32';
+                      if (stateText.includes('Zrušen')) { bg='#FFEBEE'; col='#C62828'; }
+                      if (stateText.includes('Objedná')) { bg='#E3F2FD'; col='#1565C0'; }
+                      h5.innerHTML =
+                          '<span style="font-size:10px;font-weight:700;color:#1565C0;text-transform:uppercase;letter-spacing:0.5px;min-width:70px;">' + header.innerText + '</span>' +
+                          '<span style="background:' + bg + ';color:' + col + ';font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">' + stateText + '</span>';
+                  }
+              });
+          }
+
+          // Nav tabs
+          var navTabs = modal.querySelector('.nav-tabs');
+          if (navTabs) {
+              navTabs.style.cssText = 'display:flex;border-bottom:2px solid #e8edf8;padding:0 16px;background:white;margin:0;list-style:none;';
+              navTabs.querySelectorAll('li').forEach(function(li) {
+                  var a = li.querySelector('a');
+                  if (!a) return;
+                  var isActive = li.classList.contains('active');
+                  li.style.cssText = 'list-style:none;margin:0;';
+                  a.style.cssText = 'display:block;padding:10px 16px;font-size:13px;font-weight:600;text-decoration:none;border:none;background:transparent;color:' + (isActive ? '#1565C0' : '#90a4ae') + ';' + (isActive ? 'border-bottom:2px solid #1565C0;margin-bottom:-2px;' : '');
+              });
+          }
+
+          // Tab content
+          var tabContent = modal.querySelector('.tab-content');
+          if (tabContent) tabContent.style.cssText = 'padding:12px 16px;background:white;';
+
+          // Footer
+          var footer = modal.querySelector('.modal-footer');
+          if (footer) {
+              footer.style.cssText = 'padding:12px 16px;border-top:1px solid #e8edf8;background:white;border-radius:0 0 20px 20px;';
+              footer.querySelectorAll('.btn').forEach(function(btn) {
+                  btn.style.cssText = 'background:#1565C0;color:white;border:none;border-radius:12px;padding:12px 0;font-size:15px;font-weight:600;width:100%;display:block;';
+              });
+          }
+
+          var dialog = modal.querySelector('.modal-dialog');
+          if (dialog) dialog.setAttribute('style', 'width:94%!important;max-width:420px!important;margin:5vh auto!important;');
+          var content = modal.querySelector('.modal-content');
+          if (content) content.setAttribute('style', 'border-radius:20px!important;overflow:hidden!important;border:none!important;box-shadow:0 20px 60px rgba(0,0,0,0.3)!important;');
+          var footer = modal.querySelector('.modal-footer');
+          if (footer) footer.setAttribute('style', 'padding:12px 16px!important;border-top:1px solid #e8edf8!important;background:white!important;border-radius:0 0 20px 20px!important;');
+      }
+
+      // Spustíme při každém otevření modalu
+      document.addEventListener('shown.bs.modal', function(e) {
+          if (e.target && e.target.id === 'orderDetailModal') {
+              setTimeout(styleOrderDetail, 100);
+          }
+      });
+
+      // Sledujeme změny v menuItemDetailModalBody
+      var orderDetailObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(m) {
+              if (m.addedNodes.length > 0) {
+                  setTimeout(function() {
+                      styleOrderDetail();
+                      styleOrderDetailModal();
+                  }, 150);
+              }
+          });
+      });
+
+      setTimeout(function() {
+          var body = document.getElementById('menuItemDetailModalBody');
+          if (body) orderDetailObserver.observe(body, { childList: true, subtree: false });
+      }, 1000);
+
+      function styleOrderDetailModal() {
+          var modal = document.getElementById('orderDetailModal');
+          if (!modal) return;
+
+          // Nastylujeme modal-content
+          var content = modal.querySelector('.modal-content');
+          if (content) {
+              content.style.cssText = 'border-radius:20px!important;border:none!important;' +
+                  'box-shadow:0 20px 60px rgba(0,0,0,0.35)!important;overflow:hidden!important;';
+          }
+
+          // modal-dialog
+          var dialog = modal.querySelector('.modal-dialog');
+          if (dialog) {
+              dialog.style.cssText = 'width:94%!important;max-width:420px!important;margin:5vh auto!important;';
+          }
+
+          // Název jídla – modrý gradient
+          var mealName = modal.querySelector('.mealName');
+          if (mealName) {
+              mealName.style.cssText =
+                  'background:linear-gradient(135deg,#1565C0 0%,#1976D2 100%)!important;' +
+                  'color:white!important;margin:0!important;padding:16px!important;' +
+                  'font-size:15px!important;font-weight:700!important;line-height:1.4!important;';
+          }
+
+          // halves sekce
+          var halves = modal.querySelector('.halves');
+          if (halves) halves.style.cssText = 'padding:16px!important;background:#f8f9ff!important;';
+
+          // h5 popisky
+          modal.querySelectorAll('.leftHalf h5').forEach(function(h5) {
+              h5.style.cssText = 'margin:6px 0!important;font-size:13px!important;color:#333!important;font-weight:400!important;';
+              var header = h5.querySelector('.orderDetailHeader');
+              if (header) {
+                  header.style.cssText = 'font-size:11px!important;font-weight:700!important;color:#1565C0!important;text-transform:uppercase!important;letter-spacing:0.5px!important;';
+              }
+          });
+
+          // Tlačítko Zavřít
+          var footer = modal.querySelector('.modal-footer');
+          if (footer) {
+              footer.style.cssText = 'padding:10px 16px!important;border-top:1px solid #e8edf8!important;';
+              var btn = footer.querySelector('.btn');
+              if (btn) btn.style.cssText = 'background:#1565C0!important;color:white!important;border:none!important;border-radius:12px!important;padding:10px 28px!important;font-size:14px!important;font-weight:600!important;width:100%!important;';
+          }
+
+          // Nav tabs
+          var navTabs = modal.querySelector('.nav-tabs');
+          if (navTabs) {
+              navTabs.style.cssText = 'border-bottom:2px solid #e8edf8!important;padding:0 16px!important;background:white!important;margin:0!important;display:flex!important;';
+              navTabs.querySelectorAll('li a').forEach(function(a) {
+                  a.style.cssText = 'color:#90a4ae!important;font-size:13px!important;font-weight:600!important;border:none!important;padding:10px 16px!important;background:transparent!important;display:block!important;';
+              });
+              var activeA = navTabs.querySelector('li.active a');
+              if (activeA) activeA.style.color = '#1565C0';
+          }
+
+          // Tab content
+          var tabContent = modal.querySelector('.tab-content');
+          if (tabContent) tabContent.style.cssText = 'padding:12px 16px!important;background:white!important;';
+      }
       function addOrderedBadges() {
           document.querySelectorAll('.menuGridRowOrdered').forEach(function(row) {
               // Odstraníme červené inline styly
