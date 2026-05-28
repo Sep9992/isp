@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'notifications.dart';
 import 'settings_screen.dart';
+import 'splash_screen.dart';
+import 'login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,7 +65,10 @@ class IspApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const IspWebScreen(),
+      home: const SplashScreen(),
+      routes: {
+        '/home': (context) => const IspWebScreen(),
+      },
     );
   }
 }
@@ -132,6 +137,7 @@ class _IspWebScreenState extends State<IspWebScreen> {
   bool isLoginPage = true;
   bool hasError = false;          // ← offline stav
   int _selectedIndex = 0;
+  int _previousIndex = 0;
   String userName = 'Uživatel';
   String _lastAttemptedUrl = 'https://isp.mlsoft.cz/web/login.htm';
 
@@ -149,14 +155,23 @@ class _IspWebScreenState extends State<IspWebScreen> {
         'IspChannel',
         onMessageReceived: (JavaScriptMessage message) {
           final raw = message.message.trim();
-          if (raw.isEmpty || raw == 'Uživatel') return;
+          if (raw.isEmpty) return;
 
+          // Vyčistíme případné "unid-xxx-Jméno Příjmení" formáty
           String clean = raw;
-          if (clean.contains('-') && clean.contains('unid')) {
-            final parts = clean.split('-');
-            if (parts.length > 1) clean = parts.last.trim();
+          if (raw.contains('-')) {
+            final parts = raw.split('-');
+            // Vezmeme poslední část která obsahuje mezeru (= jméno + příjmení)
+            for (final part in parts.reversed) {
+              final p = part.trim();
+              if (p.contains(' ') && p.length >= 3) {
+                clean = p;
+                break;
+              }
+            }
           }
-          if (clean.length > 2 && clean != userName) {
+
+          if (clean.length >= 3 && clean != 'Uživatel' && clean != userName) {
             setState(() => userName = clean);
           }
         },
@@ -217,14 +232,15 @@ class _IspWebScreenState extends State<IspWebScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (ctx) => const SettingsScreen()),
       ).then((_) {
-        // Po návratu z nastavení resetujeme index zpět na předchozí záložku
-        if (mounted) setState(() => _selectedIndex = 0);
+        // Po návratu z nastavení zachováme předchozí záložku
+        if (mounted) setState(() => _selectedIndex = _previousIndex);
       });
       return;
     }
     if (_selectedIndex == index && !isLoading && !hasError) return;
     final url = _tabs[index].url;
     setState(() {
+      _previousIndex = _selectedIndex;
       _selectedIndex = index;
       _lastAttemptedUrl = url;
     });
@@ -345,6 +361,42 @@ class _IspWebScreenState extends State<IspWebScreen> {
 
   void _applyAllFixes() {
     controller.runJavaScript(r"""
+      // ── Extrakce jména uživatele ──────────────────────────────────────
+      (function extractUserName() {
+        var candidates = [
+          document.getElementById('pageHeaderUserLabel'),
+          document.getElementById('pageHeaderUser'),
+          document.querySelector('.pageHeaderUser'),
+          document.querySelector('[id*="userName"]'),
+          document.querySelector('[id*="userLabel"]'),
+          document.querySelector('[class*="userLabel"]'),
+        ];
+
+        for (var el of candidates) {
+          if (el) {
+            var text = (el.innerText || el.textContent || '').trim();
+            if (text.length >= 3) {
+              IspChannel.postMessage(text);
+              return;
+            }
+          }
+        }
+
+        // Záloha: hledáme v hlavičce text vypadající jako celé jméno
+        var header = document.querySelector('.header, #header, .top-bar');
+        if (header) {
+          var els = header.querySelectorAll('span, div, td, a, li');
+          for (var el of els) {
+            var t = (el.innerText || '').trim();
+            // Jméno: 2+ slov, jen písmena + mezery, délka 3–50
+            if (t.length >= 3 && t.length <= 50 && /^[A-Za-z\u00C0-\u017E\s]+$/.test(t) && t.includes(' ')) {
+              IspChannel.postMessage(t);
+              return;
+            }
+          }
+        }
+      })();
+
       var style = document.createElement('style');
       style.innerHTML = `
         #sidebar, .sidebar, #left-col, .left-column, .left-col, #left-menu, .left-menu, 
@@ -957,8 +1009,18 @@ class _IspWebScreenState extends State<IspWebScreen> {
         }
 
         /* ═══════════════════════════════════════════
-           OBJEDNÁVKY – cateringorders.htm
+           BURZA – cateringexchange.htm
            ═══════════════════════════════════════════ */
+
+        /* Wrapper Laufen nadpis */
+        .contentHeader + div, #content > div:first-child {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            color: #546e7a !important;
+            padding: 8px 10px 4px 10px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+        }
 
         /* Skryjeme obrázky příborů a stavu */
         #orderRow .menuGridRowMeal img,
@@ -1481,7 +1543,16 @@ class _IspWebScreenState extends State<IspWebScreen> {
       setTimeout(animateCards, 200);
       setTimeout(checkEmptyDay, 600);
 
-      // ── Objednávky – nahradit ikonky stavu barevnými odznaky ─────────
+      // ── Burza – nastylovat tlačítko Vzít z burzy ─────────────────────
+      function styleExchangePage() {
+          if (!window.location.href.includes('cateringexchange')) return;
+          document.querySelectorAll('.menuGridRowButton img[alt*="burzy"], .menuGridRowButton img[title*="burzy"]').forEach(function(img) {
+              if (img.getAttribute('data-exchange-styled')) return;
+              img.setAttribute('data-exchange-styled', '1');
+              img.style.cssText = 'width:28px;height:28px;opacity:0.7;cursor:pointer;';
+          });
+      }
+      setTimeout(styleExchangePage, 600);
       function styleOrdersPage() {
           if (!window.location.href.includes('cateringorders')) return;
 
@@ -1994,8 +2065,12 @@ class _IspWebScreenState extends State<IspWebScreen> {
             // WebView je vždy v DOM (zachovává stav stránky)
             WebViewWidget(controller: controller),
 
+            // Flutter login obrazovka překryje WebView na login stránce
+            if (isLoginPage)
+              LoginScreen(webController: controller),
+
             // Offline stránka překryje WebView při chybě
-            if (hasError) _buildOfflinePage(),
+            if (hasError && !isLoginPage) _buildOfflinePage(),
 
             // Loading overlay (nezobrazuje se zároveň s offline stránkou)
             if (isLoading && !hasError)

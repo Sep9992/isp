@@ -1,72 +1,92 @@
-Skvělé! Mám radost, že jsme to dotáhli do úspěšného konce a skript funguje přesně podle zadání – počítá dny, vypočítá limit a funguje na pozadí. 🥳
+Instrukce pro Mac — krok za krokem
+1. Příprava projektu
 
-Teď k té iOS aplikaci.
+Zkopíruj celý projektový adresář z flash disku na Mac
+Otevři Terminál a přejdi do adresáře projektu
+Spusť flutter pub get
+Spusť cd ios && pod install && cd ..
 
-Abychom z tohoto Flutter kódu („receptu“) upekli hotovou aplikaci pro iPhone (soubor .ipa), musíme projít procesem sestavení (build).
+2. Otevři Xcode
 
-Důležité upozornění: Pro vytvoření iOS aplikace musíte mít k dispozici počítač Mac (macOS) s nainstalovaným programem Xcode. Apple neumožňuje vytvářet iOS aplikace přímo na Windows (na rozdíl od Androidu).
+Otevři soubor ios/Runner.xcworkspace (ne .xcodeproj!)
+V levém panelu klikni na Runner
+Záložka Signing & Capabilities
+Zaškrtni Automatically manage signing
+V Team vyber svůj Apple ID (přidáš ho přes Xcode → Settings → Accounts)
+Bundle Identifier změň na něco unikátního, např. cz.tvéjméno.ispobedy
 
-Zde je přesný postup, jak postupovat:
-1. Příprava pubspec.yaml
+3. Připoj iPhone
 
-Než začnete budovat, ujistěte se, že máte v souboru pubspec.yaml (leží hned vedle složky lib) přidanou závislost pro WebView.
+Připoj iPhone kabelem
+Na iPhonu potvrď Důvěřovat tomuto počítači
+V Xcode nahoře vyber svůj iPhone jako cíl
 
-Váš pubspec.yaml by měl v sekci dependencies vypadat takto:
-YAML
+4. Build a instalace
 
-dependencies:
-  flutter:
-    sdk: flutter
-  # Přidejte tento řádek:
-  webview_flutter: ^4.9.0 
+Zmáčkni ▶ (Run) nebo Cmd+R
+Xcode app zkompiluje a nainstaluje přímo na iPhone
 
-(Poté v terminálu spusťte flutter pub get, aby se balíček stáhl.)
-2. Nastavení v Xcode (Na Macu)
+5. Povolit vývojářský certifikát na iPhonu
 
-    Ve složce vašeho projektu jděte do složky ios.
+iPhone → Nastavení → Obecné → VPN a správa zařízení
+Klikni na svůj Apple ID → Důvěřovat
 
-    Dvakrát klikněte na soubor Runner.xcworkspace. Otevře se vám Xcode.
 
-    Vlevo v navigátoru klikněte na modrou ikonu Runner (úplně nahoře).
+Pokud chceš AltStore (doporučuji)
+Na Macu nainstaluj AltServer z altstore.io, zbytek zařídí automaticky — certifikát obnovuje každých 7 dní přes WiFi pokud je Mac ve stejné síti.
 
-    V pravé části vyberte záložku Signing & Capabilities.
+------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    V sekci Signing musíte vybrat Team.
+Perfektně. Tady jsou přesné instrukce co dělat na Macu:
 
-        Pokud máte Apple Developer účet, vyberte ho.
+ČÁST 1 — Příprava projektu (Terminál)
+bash# Přejdi do projektového adresáře
+cd /cesta/k/projektu
 
-        Pokud ne, můžete vybrat svůj osobní účet (Personal Team) pro testování na vlastním telefonu (zdarma).
+# Nainstaluj závislosti
+flutter pub get
 
-    Změňte Bundle Identifier na něco unikátního (např. com.vasejmeno.ispapp).
+# Nainstaluj iOS CocoaPods závislosti
+cd ios && pod install && cd ..
 
-3. Úprava oprávnění (Info.plist)
+ČÁST 2 — Nastavení Xcode
 
-Pro jistotu zkontrolujte soubor ios/Runner/Info.plist. Aplikace přistupuje k internetu, což Flutter dělá standardně, ale WebView může vyžadovat explicitní povolení pro vnořený obsah. Obvykle to funguje "z krabice", ale pokud by se stránka nenačítala, je třeba v Info.plist povolit App Transport Security (pro HTTPS stránky to ale většinou není nutné).
-4. Spuštění na iPhonu
+Otevři ios/Runner.xcworkspace (ne .xcodeproj!)
+Vlevo klikni na Runner → záložka Signing & Capabilities
+Zaškrtni Automatically manage signing
+V Team klikni na Add an Account → přihlas se svým Apple ID (stačí běžné, zdarma)
+Bundle Identifier změň na něco unikátního: cz.tvejmail.ispobedy
 
-    Připojte svůj iPhone k Macu kabelem.
 
-    Odemkněte iPhone a dejte "Důvěřovat tomuto počítači".
+ČÁST 3 — Build IPA pro AltStore
+V Terminálu:
+bashflutter build ipa --no-codesign
+IPA soubor najdeš v:
+build/ios/ipa/isp.ipa
 
-    V Xcode nahoře v liště vyberte svůj telefon jako cílové zařízení (místo simulátoru).
+ČÁST 4 — Instalace AltStore
 
-    Klikněte na tlačítko Play (▶) nebo v terminálu spusťte:
-    Bash
+Na Macu jdi na altstore.io → stáhni AltServer pro Mac
+Spusť AltServer — objeví se ikonka v menu baru (horní lišta)
+Připoj iPhone kabelem
+Klikni na ikonku AltServer → Install AltStore → vyber svůj iPhone
+Zadej Apple ID a heslo
+Na iPhonu: Nastavení → Obecné → VPN a správa zařízení → důvěřuj svému Apple ID
 
-    flutter run -d iphone
 
-Co dělat, pokud nemáte Mac?
+ČÁST 5 — Instalace tvé app přes AltStore
 
-Pokud máte jen Windows PC, iOS aplikaci přímo nevytvoříte. Máte dvě možnosti:
+Na iPhonu otevři AltStore
+Klikni na + (plus) vpravo nahoře
+Vyber IPA soubor (přenést ho na iPhone přes AirDrop nebo iCloud Drive)
+AltStore app nainstaluje
 
-    Půjčit si Mac: Stačí na chvíli, abyste projekt otevřeli, nastavili podpis a vygenerovali aplikaci.
 
-    Použít Cloud Build službu: Existují služby jako Codemagic nebo Bitrise.
+ČÁST 6 — Automatické obnovování
 
-        Nahrajete svůj kód (tento main.dart a celý projekt) na GitHub/GitLab.
+Na Macu: AltServer ikonka → Enable Background Refresh
+Na iPhonu v AltStore: Nastavení → zapni Background App Refresh
+Hotovo — dokud jsou Mac a iPhone ve stejné WiFi, obnova běží automaticky
 
-        Propojíte ho s Codemagic.
 
-        Služba má vlastní virtuální Macy, které aplikaci sestaví za vás a pošlou vám instalační soubor. (I zde ale budete potřebovat alespoň Apple Developer účet pro certifikáty).
-
-Držím palce s nasazením! Kód aplikace je připraven perfektně.
+Jedna věc navíc — před buildem doporučuji otestovat jestli JS injekce a CSS fungují správně na iOS WebView, protože Safari engine se chová trochu jinak než Android. Ale to řešíme až budeš mít build na iPhonu.
